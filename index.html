@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f9d58">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,6 +25,11 @@
   --gray:#5f6368;  --border:#e0e0e0;
   --bg:#f1f3f4;    --white:#ffffff;
 }
+  <script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
 body { font-family:'Cairo',sans-serif; background:var(--bg); min-height:100vh; color:#202124; overflow-x:hidden; }
 
 /* HEADER */
