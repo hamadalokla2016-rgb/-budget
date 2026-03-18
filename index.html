@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ميزانيتي">
+<title>ميزانيتي الشخصية</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --green:#0f9d58; --green-l:#e6f4ea;
+  --teal:#00897b;  --teal-l:#e0f2f1;
+  --blue:#1a73e8;  --blue-l:#e8f0fe;
+  --red:#d93025;   --red-l:#fce8e6;
+  --orange:#e65100;--orange-l:#fff3e0;
+  --yellow:#f9ab00;--yellow-l:#fef9e3;
+  --purple:#9334e6;--purple-l:#f3e8fd;
+  --brown:#6d4c41; --brown-l:#efebe9;
+  --crimson:#c62828;--crimson-l:#ffebee;
+  --gray:#5f6368;  --border:#e0e0e0;
+  --bg:#f1f3f4;    --white:#ffffff;
+}
+body { font-family:'Cairo',sans-serif; background:var(--bg); min-height:100vh; color:#202124; overflow-x:hidden; }
+
+/* HEADER */
+.header { background:white; padding:10px 14px; display:flex; align-items:center; gap:8px; box-shadow:0 1px 4px rgba(0,0,0,0.12); position:sticky; top:0; z-index:100; }
+.logo { width:32px; height:32px; background:linear-gradient(135deg,#34a853,#0f9d58); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.title { flex:1; font-weight:700; font-size:15px; }
+.month-btn { background:#f1f3f4; border:1px solid var(--border); border-radius:20px; padding:5px 12px; font-family:'Cairo',sans-serif; font-size:12px; font-weight:700; color:#202124; cursor:pointer; white-space:nowrap; }
+.saved-badge { font-size:11px; color:var(--green); font-weight:700; transition:opacity 0.3s; }
+
+/* MONTH PICKER */
+.picker-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:200; }
+.picker-overlay.open { display:block; }
+.picker-box { position:absolute; top:54px; left:10px; background:white; border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,0.18); padding:14px; min-width:270px; }
+.picker-year { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.picker-year button { border:none; background:#f1f3f4; border-radius:8px; padding:5px 12px; cursor:pointer; font-family:'Cairo',sans-serif; font-size:14px; }
+.picker-year span { font-weight:700; font-size:15px; }
+.months-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.month-item { padding:7px 4px; border:none; border-radius:8px; cursor:pointer; font-family:'Cairo',sans-serif; font-size:12px; position:relative; transition:all 0.15s; }
+.month-item.active { background:var(--green); color:white; font-weight:700; }
+.month-item.has-data { background:var(--green-l); color:var(--green); }
+.month-item:not(.active):not(.has-data) { background:#f8f9fa; color:var(--gray); }
+.dot { position:absolute; top:3px; left:3px; width:5px; height:5px; border-radius:50%; background:var(--green); }
+.picker-actions { display:flex; gap:6px; margin-top:10px; }
+.picker-actions button { flex:1; padding:7px; border:none; border-radius:8px; font-family:'Cairo',sans-serif; font-size:11px; font-weight:700; cursor:pointer; }
+.btn-copy { background:var(--blue-l); color:var(--blue); }
+.btn-reset { background:var(--red-l); color:var(--red); }
+
+/* CARDS */
+.cards-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:10px 10px 0; }
+.card { background:white; border-radius:10px; padding:8px 10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); border-top:3px solid; }
+.card-label { font-size:10px; color:var(--gray); font-weight:700; margin-bottom:2px; }
+.card-value { font-size:12px; font-weight:800; direction:ltr; text-align:right; }
+
+/* SECTIONS */
+.sections { padding:10px; }
+.section { background:white; border-radius:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); overflow:hidden; }
+.sec-header { padding:10px 14px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none; }
+.sec-title { color:white; font-weight:700; font-size:13px; display:flex; align-items:center; gap:6px; }
+.info-tag { background:rgba(255,255,255,0.25); color:white; font-size:9px; padding:1px 6px; border-radius:10px; font-weight:700; }
+.sec-right { display:flex; align-items:center; gap:8px; }
+.sec-total { color:white; font-weight:800; font-size:13px; direction:ltr; }
+.sec-arrow { color:white; font-size:11px; }
+
+.col-headers { display:grid; grid-template-columns:26px 1fr 90px 24px; gap:4px; padding:5px 10px; background:#f8f9fa; border-bottom:1px solid #e0e0e0; }
+.col-headers span { font-size:10px; font-weight:700; color:var(--gray); }
+.col-headers .amt-h { text-align:left; direction:ltr; }
+
+.row { display:grid; grid-template-columns:26px 1fr 90px 24px; gap:4px; padding:6px 10px; border-bottom:1px solid #f0f0f0; align-items:center; transition:background 0.1s; }
+.row:hover { background:#fafafa; }
+.row.inactive { background:#fafafa; }
+
+.checkbox { width:18px; height:18px; border-radius:4px; border:2px solid #ccc; background:white; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s; }
+.checkbox.checked { border-color:currentColor; }
+.checkbox span { color:white; font-size:11px; line-height:1; }
+
+.row input { border:none; background:transparent; font-family:'Cairo',sans-serif; outline:none; width:100%; }
+.row .label-inp { font-size:12px; color:#202124; }
+.row .label-inp.struck { color:#bbb; text-decoration:line-through; }
+.row .amt-inp { font-size:12px; font-weight:700; color:var(--blue); direction:ltr; text-align:left; }
+.row .amt-inp.struck { color:#bbb; }
+.row .del-btn { border:none; background:none; color:#ddd; font-size:18px; cursor:pointer; padding:0; line-height:1; }
+.row .del-btn:hover { color:#d93025; }
+
+.sec-footer { display:grid; grid-template-columns:26px 1fr 90px 24px; gap:4px; padding:7px 10px; border-top:2px solid; }
+.sec-footer .ft-label { font-size:12px; font-weight:700; }
+.sec-footer .ft-val { font-size:13px; font-weight:800; direction:ltr; text-align:left; }
+
+.add-btn { width:100%; padding:7px; background:none; border:none; border-top:1px dashed var(--border); color:var(--gray); font-family:'Cairo',sans-serif; font-size:12px; cursor:pointer; }
+.add-btn:hover { background:#f8f9fa; color:var(--blue); }
+
+/* SUMMARY */
+.summary { background:white; border-radius:10px; padding:14px 16px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+.sum-title { font-weight:700; font-size:14px; margin-bottom:10px; }
+.sum-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid #f0f0f0; }
+.sum-row .s-label { font-size:13px; color:var(--gray); }
+.sum-row .s-val { font-size:13px; font-weight:700; direction:ltr; }
+.sum-subtotal { display:flex; justify-content:space-between; align-items:center; padding:6px 10px; background:#f0f9f4; border-radius:8px; margin:6px 0; }
+.sum-subtotal span { font-size:13px; font-weight:700; color:#202124; }
+.sum-subtotal .s-val { font-size:14px; font-weight:800; color:var(--green); direction:ltr; }
+.sum-balance { display:flex; justify-content:space-between; align-items:center; padding:10px 0 6px; border-top:2px solid var(--border); margin-top:4px; }
+.sum-balance .b-label { font-size:14px; font-weight:800; }
+.sum-balance .b-val { font-size:20px; font-weight:900; direction:ltr; }
+.info-box { margin-top:12px; padding:10px; background:#f8f9fa; border-radius:8px; }
+.info-box-title { font-size:11px; color:var(--gray); font-weight:700; margin-bottom:6px; }
+.info-row { display:flex; justify-content:space-between; padding:3px 0; }
+.info-row span { font-size:12px; }
+.info-row .i-val { font-weight:700; direction:ltr; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">📊</div>
+  <div class="title">ميزانيتي</div>
+  <button class="month-btn" id="monthBtn" onclick="togglePicker()">📅 ... ▼</button>
+  <span class="saved-badge" id="savedBadge" style="opacity:0">✅</span>
+</div>
+
+<!-- MONTH PICKER -->
+<div class="picker-overlay" id="pickerOverlay" onclick="closePicker(event)">
+  <div class="picker-box">
+    <div class="picker-year">
+      <button onclick="changeYear(-1)">◄</button>
+      <span id="pickerYear"></span>
+      <button onclick="changeYear(1)">►</button>
+    </div>
+    <div class="months-grid" id="monthsGrid"></div>
+    <div class="picker-actions">
+      <button class="btn-copy" onclick="copyToNext()">📋 نسخ للشهر القادم</button>
+      <button class="btn-reset" onclick="resetMonth()">🗑️ مسح الشهر</button>
+    </div>
+  </div>
+</div>
+
+<!-- CARDS -->
+<div class="cards-grid" id="cardsGrid"></div>
+
+<!-- SECTIONS -->
+<div class="sections" id="sectionsContainer"></div>
+
+<script>
+const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+
+const SECTION_DEFS = [
+  {id:"wallet",      label:"💼 المحفظة الحالية",             color:"#00897b", light:"#e0f2f1", type:"income",
+   rows:[{l:"كاش متوفر",a:500,n:"نقداً",c:true},{l:"بنك",a:10,n:"",c:true},{l:"بنك 2",a:500,n:"",c:true}]},
+  {id:"income",      label:"📥 الدخل الواصل",                color:"#0f9d58", light:"#e6f4ea", type:"income",
+   rows:[{l:"راتب AMS",a:1400,n:"شهري",c:true},{l:"مساعدة الاطفال",a:1300,n:"",c:true},{l:"وائل",a:400,n:"",c:true},{l:"استرجاع تصفية الايجار",a:100,n:"",c:true}]},
+  {id:"future",      label:"📅 الدخل المتوقع",               color:"#1a73e8", light:"#e8f0fe", type:"income",
+   rows:[{l:"مساعدة السكن",a:950,n:"قريباً",c:false},{l:"استرجاع مشتريات اونلاين",a:300,n:"",c:false},{l:"بيع سيارة",a:2000,n:"متوقع",c:false},{l:"استرجاع الضرائب",a:5000,n:"سنوي",c:false}]},
+  {id:"fixed",       label:"📌 المصاريف الثابتة",            color:"#d93025", light:"#fce8e6", type:"expense",
+   rows:[{l:"تكملة الايجار",a:47,n:"",c:true},{l:"حوالة سوريا",a:300,n:"شهري",c:true},{l:"اشتراكات التطبيقات",a:70,n:"",c:true},{l:"الكهرباء والموبايل والانترنت",a:217,n:"",c:true}]},
+  {id:"var",         label:"🛒 المصاريف المتغيرة",           color:"#e65100", light:"#fff3e0", type:"expense",
+   rows:[{l:"تامين السيارة",a:220,n:"",c:true},{l:"مقاضي البيت",a:1100,n:"",c:true},{l:"حلاق",a:50,n:"",c:true},{l:"تصليح وتجديد السيارة",a:570,n:"",c:true},{l:"الطب والصيدلية",a:90,n:"",c:true},{l:"بترول السيارة",a:150,n:"",c:true},{l:"صيانة وادوات منزلية",a:100,n:"",c:true},{l:"هدايا",a:50,n:"",c:true},{l:"دخان",a:150,n:"",c:true},{l:"ملابس",a:50,n:"",c:true},{l:"رسوم مدرسية",a:4,n:"",c:true},{l:"رسوم اشتراك نادي",a:120,n:"",c:true},{l:"مخالفة سيارة وحكومية",a:0,n:"",c:true}]},
+  {id:"expected_exp",label:"🔮 مصاريف متوقعة (باقي الشهر)", color:"#6d4c41", light:"#efebe9", type:"expected_expense",
+   rows:[{l:"أضف مصروف متوقع",a:0,n:"",c:true}]},
+  {id:"debt",        label:"🔴 الديون المستحقة",             color:"#f9ab00", light:"#fef9e3", type:"expense",
+   rows:[{l:"عواد",a:500,n:"",c:true},{l:"غناوي",a:400,n:"",c:true},{l:"حمود",a:50,n:"",c:true},{l:"وائل",a:400,n:"",c:true}]},
+  {id:"deferred",    label:"📆 الديون المؤجلة",              color:"#c62828", light:"#ffebee", type:"info",
+   rows:[{l:"مبلغ شراء سيارة",a:4000,n:"مؤجل",c:true},{l:"حمود",a:1000,n:"",c:true},{l:"عواد",a:1800,n:"",c:true},{l:"ياسر",a:50,n:"",c:true}]},
+  {id:"savings",     label:"🏦 الادخار والاستثمار",          color:"#9334e6", light:"#f3e8fd", type:"info",
+   rows:[{l:"ادخار محفظة باردة",a:6000,n:"طويل الأمد",c:true},{l:"استثمار تداول فوركس",a:500,n:"",c:true},{l:"استثمار عملات مشفرة",a:1000,n:"",c:true},{l:"محفظة",a:2000,n:"",c:true}]},
+];
+
+// STATE
+let curYear = new Date().getFullYear();
+let curMonth = new Date().getMonth();
+let sections = [];
+let openSections = {};
+let pickerYear = curYear;
+let saveTimer = null;
+
+function storageKey(y,m){ return `mybudget_${y}_${m}`; }
+
+function loadData(){
+  const raw = localStorage.getItem(storageKey(curYear,curMonth));
+  if(raw){
+    sections = JSON.parse(raw);
+  } else {
+    sections = SECTION_DEFS.map(s=>({
+      id:s.id, label:s.label, color:s.color, light:s.light, type:s.type,
+      rows: s.rows.map(r=>({label:r.l, amount:r.a, note:r.n, active:r.c}))
+    }));
+  }
+}
+
+function saveData(){
+  localStorage.setItem(storageKey(curYear,curMonth), JSON.stringify(sections));
+  const badge = document.getElementById('savedBadge');
+  badge.style.opacity = '1';
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{ badge.style.opacity='0'; }, 1500);
+}
+
+function fmt(n){
+  const sign = n<0?'-':'';
+  return sign + Math.abs(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
+}
+
+function activeSum(rows){ return rows.filter(r=>r.active).reduce((a,r)=>a+(parseFloat(r.amount)||0),0); }
+
+function getSection(id){ return sections.find(s=>s.id===id); }
+function get(id){ return activeSum(getSection(id).rows); }
+
+function calcAll(){
+  const wallet = get('wallet');
+  const income = get('income');
+  const future = get('future');
+  const totalIncome = wallet+income+future;
+  const fixed = get('fixed');
+  const varExp = get('var');
+  const totalExp = fixed+varExp;
+  const debt = get('debt');
+  const expectedExp = get('expected_exp');
+  const savings = get('savings');
+  const deferred = get('deferred');
+  const balance = totalIncome-totalExp-debt;
+  const balanceAfter = balance-expectedExp;
+  return {wallet,income,future,totalIncome,fixed,varExp,totalExp,debt,expectedExp,savings,deferred,balance,balanceAfter};
+}
+
+// RENDER CARDS
+function renderCards(){
+  const c = calcAll();
+  const cards = [
+    {label:"💼 المحفظة",       value:c.wallet,   color:"#00897b"},
+    {label:"📥 الدخل الواصل",  value:c.income,   color:"#0f9d58"},
+    {label:"📅 المتوقع ✓",     value:c.future,   color:"#1a73e8"},
+    {label:"📤 المصاريف",      value:c.totalExp, color:"#d93025"},
+    {label:"🔴 الديون",        value:c.debt,     color:"#f9ab00"},
+    {label:"⚖️ الرصيد",        value:c.balance,  color:c.balance>=0?"#0f9d58":"#d93025"},
+  ];
+  document.getElementById('cardsGrid').innerHTML = cards.map(card=>`
+    <div class="card" style="border-top-color:${card.color}">
+      <div class="card-label">${card.label}</div>
+      <div class="card-value" style="color:${card.color}">${fmt(card.value)}</div>
+    </div>
+  `).join('');
+}
+
+// RENDER SECTIONS
+function renderSections(){
+  const container = document.getElementById('sectionsContainer');
+  container.innerHTML = '';
+  sections.forEach(sec=>{
+    container.appendChild(renderSection(sec));
+  });
+  container.appendChild(renderSummary());
+}
+
+function renderSection(sec){
+  const total = activeSum(sec.rows);
+  const isOpen = !!openSections[sec.id];
+  const isInfo = sec.type==='info';
+  const div = document.createElement('div');
+  div.className='section';
+  div.innerHTML=`
+    <div class="sec-header" style="background:${sec.color}" onclick="toggleSection('${sec.id}')">
+      <div class="sec-title">
+        ${sec.label}
+        ${isInfo?'<span class="info-tag">معلومة</span>':''}
+      </div>
+      <div class="sec-right">
+        <span class="sec-total">${fmt(total)}</span>
+        <span class="sec-arrow">${isOpen?'▲':'▼'}</span>
+      </div>
+    </div>
+    ${isOpen ? renderSectionBody(sec) : ''}
+  `;
+  return div;
+}
+
+function renderSectionBody(sec){
+  const total = activeSum(sec.rows);
+  const isInfo = sec.type==='info';
+  const rowsHtml = sec.rows.map((row,i)=>`
+    <div class="row ${row.active?'':'inactive'}" id="row_${sec.id}_${i}">
+      <div class="checkbox ${row.active?'checked':''}" style="${row.active?`color:${sec.color};background:${sec.color};border-color:${sec.color}`:'color:#ccc'}"
+           onclick="toggleRow('${sec.id}',${i})">
+        ${row.active?'<span>✓</span>':''}
+      </div>
+      <input class="label-inp ${row.active?'':'struck'}" value="${escHtml(row.label)}"
+             onchange="updateRow('${sec.id}',${i},'label',this.value)"
+             oninput="updateRow('${sec.id}',${i},'label',this.value)">
+      <input type="number" class="amt-inp ${row.active?'':'struck'}" value="${row.amount}"
+             onchange="updateRow('${sec.id}',${i},'amount',this.value)"
+             oninput="updateRow('${sec.id}',${i},'amount',this.value)">
+      <button class="del-btn" onclick="deleteRow('${sec.id}',${i})">×</button>
+    </div>
+  `).join('');
+
+  return `
+    <div class="col-headers">
+      <span style="text-align:center">✓</span>
+      <span>البند</span>
+      <span class="amt-h">المبلغ €</span>
+      <span></span>
+    </div>
+    ${rowsHtml}
+    <div class="sec-footer" style="background:${sec.light};border-top-color:${sec.color}">
+      <span></span>
+      <span class="ft-label" style="color:${sec.color}">الإجمالي ${isInfo?'(معلومة)':''}</span>
+      <span class="ft-val" style="color:${sec.color}">${fmt(total)}</span>
+      <span></span>
+    </div>
+    <button class="add-btn" onclick="addRow('${sec.id}')">＋ إضافة بند</button>
+  `;
+}
+
+function renderSummary(){
+  const c = calcAll();
+  const div = document.createElement('div');
+  div.className='summary';
+  div.innerHTML=`
+    <div class="sum-title">⚖️ ملخص ${MONTHS_AR[curMonth]} ${curYear}</div>
+
+    <div class="sum-row">
+      <span class="s-label">+ المحفظة الحالية</span>
+      <span class="s-val" style="color:#00897b">${fmt(c.wallet)}</span>
+    </div>
+    <div class="sum-row">
+      <span class="s-label">+ الدخل الواصل</span>
+      <span class="s-val" style="color:#0f9d58">${fmt(c.income)}</span>
+    </div>
+    <div class="sum-row">
+      <span class="s-label">+ الدخل المتوقع (المفعّل)</span>
+      <span class="s-val" style="color:#1a73e8">${fmt(c.future)}</span>
+    </div>
+
+    <div class="sum-subtotal">
+      <span>= إجمالي الدخل المتاح</span>
+      <span class="s-val">${fmt(c.totalIncome)}</span>
+    </div>
+
+    <div class="sum-row">
+      <span class="s-label">− المصاريف الثابتة والمتغيرة</span>
+      <span class="s-val" style="color:#d93025">${fmt(c.totalExp)}</span>
+    </div>
+    <div class="sum-row">
+      <span class="s-label">− الديون المستحقة</span>
+      <span class="s-val" style="color:#f9ab00">${fmt(c.debt)}</span>
+    </div>
+
+    <div class="sum-balance">
+      <span class="b-label">= الرصيد الحالي</span>
+      <span class="b-val" style="color:${c.balance>=0?'#0f9d58':'#d93025'}">${fmt(c.balance)}</span>
+    </div>
+
+    ${c.expectedExp>0?`
+    <div class="sum-row">
+      <span class="s-label">− مصاريف متوقعة</span>
+      <span class="s-val" style="color:#6d4c41">${fmt(c.expectedExp)}</span>
+    </div>
+    <div class="sum-balance" style="border-top:1px dashed #e0e0e0;margin-top:4px;padding-top:8px">
+      <span class="b-label">= الرصيد بعد المتوقع</span>
+      <span class="b-val" style="color:${c.balanceAfter>=0?'#1a73e8':'#d93025'}">${fmt(c.balanceAfter)}</span>
+    </div>`:''}
+
+    <div class="info-box">
+      <div class="info-box-title">📊 معلومات (لا تؤثر على الرصيد)</div>
+      <div class="info-row">
+        <span style="color:#9334e6">🏦 الادخار والاستثمار</span>
+        <span class="i-val" style="color:#9334e6">${fmt(c.savings)}</span>
+      </div>
+      <div class="info-row">
+        <span style="color:#c62828">📆 الديون المؤجلة</span>
+        <span class="i-val" style="color:#c62828">${fmt(c.deferred)}</span>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ACTIONS
+function toggleSection(id){
+  openSections[id]=!openSections[id];
+  renderAll();
+}
+
+function toggleRow(secId,rIdx){
+  const sec=getSection(secId);
+  sec.rows[rIdx].active=!sec.rows[rIdx].active;
+  saveData();
+  renderAll();
+}
+
+function updateRow(secId,rIdx,field,val){
+  const sec=getSection(secId);
+  sec.rows[rIdx][field]=field==='amount'?val:val;
+  saveData();
+  renderCards();
+  // Update summary without full re-render to preserve focus
+  const sumEl = document.querySelector('.summary');
+  if(sumEl) sumEl.replaceWith(renderSummary());
+  // Update section total
+  updateSectionTotal(secId);
+}
+
+function updateSectionTotal(secId){
+  const sec=getSection(secId);
+  const total=activeSum(sec.rows);
+  const secEl=document.querySelector(`[data-secid="${secId}"]`);
+  if(secEl){
+    const totalEl=secEl.querySelector('.sec-total');
+    if(totalEl) totalEl.textContent=fmt(total);
+    const ftVal=secEl.querySelector('.ft-val');
+    if(ftVal) ftVal.textContent=fmt(total);
+  }
+}
+
+function addRow(secId){
+  const sec=getSection(secId);
+  sec.rows.push({label:'بند جديد',amount:0,note:'',active:true});
+  saveData();
+  renderAll();
+  openSections[secId]=true;
+}
+
+function deleteRow(secId,rIdx){
+  const sec=getSection(secId);
+  sec.rows.splice(rIdx,1);
+  saveData();
+  renderAll();
+}
+
+// MONTH PICKER
+function togglePicker(){
+  const ov=document.getElementById('pickerOverlay');
+  pickerYear=curYear;
+  ov.classList.toggle('open');
+  renderPicker();
+}
+
+function closePicker(e){
+  if(e.target===document.getElementById('pickerOverlay'))
+    document.getElementById('pickerOverlay').classList.remove('open');
+}
+
+function changeYear(dir){
+  pickerYear+=dir;
+  renderPicker();
+}
+
+function renderPicker(){
+  document.getElementById('pickerYear').textContent=pickerYear;
+  const grid=document.getElementById('monthsGrid');
+  grid.innerHTML=MONTHS_AR.map((m,i)=>{
+    const hasData=!!localStorage.getItem(storageKey(pickerYear,i));
+    const isActive=i===curMonth&&pickerYear===curYear;
+    return `<button class="month-item ${isActive?'active':hasData?'has-data':''}" onclick="selectMonth(${i})">
+      ${m}
+      ${hasData&&!isActive?'<span class="dot"></span>':''}
+    </button>`;
+  }).join('');
+}
+
+function selectMonth(m){
+  curYear=pickerYear;
+  curMonth=m;
+  document.getElementById('pickerOverlay').classList.remove('open');
+  loadData();
+  renderAll();
+  updateMonthBtn();
+}
+
+function updateMonthBtn(){
+  document.getElementById('monthBtn').textContent=`📅 ${MONTHS_AR[curMonth]} ${curYear} ▼`;
+}
+
+function copyToNext(){
+  let nm=curMonth+1,ny=curYear;
+  if(nm>11){nm=0;ny++;}
+  const nk=storageKey(ny,nm);
+  if(!localStorage.getItem(nk)||confirm(`${MONTHS_AR[nm]} ${ny} يحتوي بيانات. هل تريد استبدالها؟`)){
+    localStorage.setItem(nk,JSON.stringify(sections));
+    alert(`✅ تم النسخ إلى ${MONTHS_AR[nm]} ${ny}`);
+  }
+  document.getElementById('pickerOverlay').classList.remove('open');
+}
+
+function resetMonth(){
+  if(confirm(`مسح بيانات ${MONTHS_AR[curMonth]} ${curYear}؟`)){
+    localStorage.removeItem(storageKey(curYear,curMonth));
+    loadData();
+    renderAll();
+  }
+  document.getElementById('pickerOverlay').classList.remove('open');
+}
+
+function renderAll(){
+  renderCards();
+  renderSections();
+  updateMonthBtn();
+}
+
+// INIT
+loadData();
+renderAll();
+</script>
+</body>
+</html>
